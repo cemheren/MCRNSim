@@ -11,7 +11,7 @@ namespace CRSimClassLib.TerrainModal
     public class Terrain
     {
         private List<MobileStation> _mobileStations;
-        private List<PrimaryUser> _primaryUsers;
+        internal List<PrimaryUser> PrimaryUsers { get; set;}
         private BaseStation _baseStation;
         private List<WayPoint> _wayPoints;
 
@@ -32,7 +32,7 @@ namespace CRSimClassLib.TerrainModal
             _rightDownCorner = new TerrainPoint(width, height);
 
             _mobileStations = new List<MobileStation>();
-            _primaryUsers = new List<PrimaryUser>();
+            PrimaryUsers = new List<PrimaryUser>();
 
             _wayPoints = _randomWaypointRepo.CreateRandomWaypoints(this, SimParameters.NumberOfWayPoints);
         }
@@ -54,30 +54,10 @@ namespace CRSimClassLib.TerrainModal
                 _mobileStations.Add(ms);
             }
         }
-
-        public void CreatePrimaryUser(double transmittingPower) 
-        {
-            var pu = new PrimaryUser(_rand.GetNextDouble(_leftUpCorner.x + 10, _rightUpCorner.x - 10),
-                    _rand.GetNextDouble(_leftUpCorner.y + 10, _leftDownCorner.y - 10), transmittingPower);
-            _primaryUsers.Add(pu);
-
-            var nextEventTime = RandomNumberRepository.Instance.NextInt(0, SimParameters.MaximalRemovePUAfter);
-
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => RemovePrimaryUser(pu)));
-        }
-
-        public void RemovePrimaryUser(PrimaryUser primaryUser)
-        {
-            _primaryUsers.Remove(primaryUser);
-
-            var nextEventTime = RandomNumberRepository.Instance.NextInt(0, SimParameters.MaximalCreatePUAfter);
-
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => CreatePrimaryUser(primaryUser.GetTransmitingPower())));
-        }
-
+        
         public List<PrimaryUser> GetAllPrimaryUsers()
         {
-            return _primaryUsers;
+            return PrimaryUsers;
         }
 
         public void CreateBaseStation()

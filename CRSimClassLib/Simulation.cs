@@ -20,15 +20,17 @@ namespace CRSimClassLib
 
         public static Action DoOnTimeTick = null;
 
-        private static StatisticsRepository _statisticsRepository;
+        private static StatisticsRepository _statisticsRepository = Singleton<StatisticsRepository>.Instance;
+        private static PrimaryUserRepository _primaryUserRepository = Singleton<PrimaryUserRepository>.Instance;
 
-        public static void InitializeSimulation(int SimulationStopTime, int numberOfMobileStations, double mobileStationWhisperRadius, double terrainWidth, double terrainHeigth)
+        public static void InitializeSimulation(int SimulationStopTime, int numberOfMobileStations, int? numberOfWayPoints, double terrainWidth, double terrainHeigth)
         {
-            _statisticsRepository = Singleton<StatisticsRepository>.Instance;
-
             EventQueue = new OrderedSet<Event>();
             _simulationStopTime = SimulationStopTime;
-            _mobileStationWhisperRadius = mobileStationWhisperRadius;
+            if (numberOfWayPoints != null)
+            {
+                SimParameters.NumberOfWayPoints = numberOfWayPoints.Value;                
+            }
 
             var simStartEvent = new Event(0);
             EnqueueEvent(simStartEvent);
@@ -36,7 +38,8 @@ namespace CRSimClassLib
             _terrain = new Terrain(terrainHeigth, terrainWidth);
             _terrain.CreateMobileStations(numberOfMobileStations, _mobileStationWhisperRadius);
             _terrain.CreateBaseStation();
-            _terrain.CreatePrimaryUser(SimParameters.PUTransmissionPower);
+            _primaryUserRepository.CreateAndAddPrimaryUser();
+            
             Time.Instance.SetTimeToZero();
             EndCondition = false;
 
@@ -74,6 +77,11 @@ namespace CRSimClassLib
             }
         }
 
+        public static Terrain GetTerrain()
+        {
+            return _terrain;
+        }
+        
         public static List<MobileStation> GetMobileStations()
         {
             return _terrain.GetMobileStations();

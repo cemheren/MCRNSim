@@ -16,12 +16,13 @@ namespace CRSimClassLib.TerrainModal
         private double _detectionThreshold = SimParameters.MSDetectionThreshold;
         private bool _previousDetectionDecision;
         public double _lastDetectedPower { get; private set; }
-        private bool _operationMode = false; //true => new algorithm, false => traditional algorithm
+        private bool _operationMode; //true => new algorithm, false => traditional algorithm
         private int MS_ID;
         private MobilityStateModal _mobilityStateModal;
 
         private MobileStationRepository _mobileStationRepository =  Singleton<MobileStationRepository>.Instance;
         private RandomWaypointRepository _randomWaypointRepository = Singleton<RandomWaypointRepository>.Instance;
+        private PowerCalculationRepository _powerRepository = Singleton<PowerCalculationRepository>.Instance;
 
         public MobileStation(double x, double y, double whisperRadius) : base(x, y)
         {
@@ -78,6 +79,17 @@ namespace CRSimClassLib.TerrainModal
             return _previousDetectionDecision;
         }
 
+        /*
+         * Non-cluster mode
+         * Sensing period + Reporting period + Transmission period
+         *      10                  10                  980
+         * 
+         * Cluster mode
+         * Sensing period + Whisper period + Decision Period + Reporting period + Transmission period
+         *      10                  20              20                 10                 940
+         * 
+         */
+
         public void StartSensingPeriod()
         {
             double lastDetectedPower;
@@ -91,7 +103,7 @@ namespace CRSimClassLib.TerrainModal
             double lastDetectedPower;
             _previousDetectionDecision = _mobileStationRepository.SenseForPUPresence(this, _detectionThreshold, out lastDetectedPower);
             _lastDetectedPower = lastDetectedPower;
-
+                        
             if (_previousDetectionDecision)
             {
                 if (this._operationMode == false)
@@ -100,13 +112,23 @@ namespace CRSimClassLib.TerrainModal
                 }
                 else
                 {
-                    _mobileStationRepository.CreateStartDecisionPeriodEvent(this);
+                    _mobileStationRepository.CreateStartWhisperPeriodEvent(this);
                 }
             }
             else
             {
-                _mobileStationRepository.CreateStartSensingPeriodEventWithNoDetection(this);
+                _mobileStationRepository.CreateStartSensingPeriodEventWithFalseDetection(this);
             }
+        }
+
+        public void StartWhisperPeriod()
+        {
+            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.WhisperPeriod), () => EndWhisperPeriod()));            
+        }
+
+        public void EndWhisperPeriod()
+        {
+            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(0), () => StartDecisionPeriod()));                        
         }
 
         public void StartDecisionPeriod()

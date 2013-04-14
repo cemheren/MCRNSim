@@ -14,7 +14,7 @@ namespace CRSimClassLib
             CurrentDistanceOfThePredictedAndActualPrimaryUserLocation = 0;
             AverageNumberOfMSThatDetectedPrimaryUserPresence = 0;
             AverageNumberOfMSThatReportedPrimaryUserPresence = 0;
-            DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent = new double[20]; //ten buckets
+            DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent = new long[20]; //ten buckets
             TotalTimeAPrimaryUserHaveExisted = 0;
             AverageWhisperRadius = 0;
         }
@@ -27,11 +27,11 @@ namespace CRSimClassLib
 
         public static double AverageNumberOfMSThatReportedPrimaryUserPresence { get; internal set; }
 
-        public static double[] DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent { get; internal set; }
+        public static long[] DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent { get; internal set; }
 
-        public static int TotalTimeAPrimaryUserHaveExisted { get; internal set; }
+        public static long TotalTimeAPrimaryUserHaveExisted { get; internal set; }
 
-        public static int TotalTimeAPrimaryUserHaveDetected { get; internal set; }
+        public static long TotalTimeAPrimaryUserHaveDetected { get; internal set; }
 
         public static double AverageWhisperRadius { get; internal set; }
     }

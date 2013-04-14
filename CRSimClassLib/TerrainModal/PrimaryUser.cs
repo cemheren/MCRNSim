@@ -9,9 +9,19 @@ namespace CRSimClassLib.TerrainModal
     {
         private double _transmittingPower;
 
-        public PrimaryUser(double x, double y, double TransmittingPower) : base(x,y)
+        protected PrimaryUser(double x, double y, double TransmittingPower) : base(x,y)
         {
             _transmittingPower = TransmittingPower;
+        }
+
+        internal static PrimaryUser CreatePrimaryUser(double x, double y, double transmittingPower)
+        {
+            return new PrimaryUser(x, y, transmittingPower);
+        }
+
+        internal static PrimaryUser CreatePrimaryUser(TerrainPoint location, double transmittingPower)
+        {
+            return new PrimaryUser(location.x, location.y, transmittingPower);
         }
 
         public double GetTransmitingPower()

@@ -26,7 +26,7 @@ namespace CRSimClassLib.Repositories
             var pus = Simulation.GetPrimaryUsers();
             if (pus.Count == 0)
             {
-                lastDetectedPower = -10000;
+                lastDetectedPower = ChannelModels.LogNormalChannelFading(-1000, 500); ;
                 return false;
             }
 
@@ -77,15 +77,21 @@ namespace CRSimClassLib.Repositories
             //return myDecisionToReport;
         }
 
+        public void ScheduleNextEvent(MobileStation station, int timeInMiliseconds, Action EventMethod)
+        {
+            var e = new Event(Time.Instance.GetTimeAfterMiliSeconds(timeInMiliseconds), EventMethod);
+            Simulation.EnqueueEvent(e);
+        }
+
         public void CreateStartReportingPeriodEvent(MobileStation station)
         {
             var e = new Event(Time.Instance.GetTimeAfterMiliSeconds(0), station.StartReportingPeriod);
             Simulation.EnqueueEvent(e);
         }
 
-        public void CreateStartDecisionPeriodEvent(MobileStation station)
+        public void CreateStartWhisperPeriodEvent(MobileStation station)
         {
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(0), station.StartDecisionPeriod));
+            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(0), station.StartWhisperPeriod));
         }
 
         public void CreateStartSensingPeriodEvent(MobileStation station)
@@ -94,7 +100,7 @@ namespace CRSimClassLib.Repositories
             Simulation.EnqueueEvent(e);                                       
         }
 
-        public void CreateStartSensingPeriodEventWithNoDetection(MobileStation station)
+        public void CreateStartSensingPeriodEventWithFalseDetection(MobileStation station)
         {
             var timeShouldPass = SimParameters.TransmissionPeriod + SimParameters.ReportingPeriod;
             var e = new Event(Time.Instance.GetTimeAfterMiliSeconds(timeShouldPass), station.StartSensingPeriod);
@@ -116,7 +122,8 @@ namespace CRSimClassLib.Repositories
         public void CreateStartSensingPeriodWhenDecidedNotToReport(MobileStation mS)
         {
             // wait for reporting time + transmission time with decision
-            var e = new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.ReportingPeriod + SimParameters.TransmissionPeriodWithDecision), mS.StartSensingPeriod);
+            var timeToWait = SimParameters.ReportingPeriod + SimParameters.TransmissionPeriodWithDecision;
+            var e = new Event(Time.Instance.GetTimeAfterMiliSeconds(timeToWait), mS.StartSensingPeriod);
             Simulation.EnqueueEvent(e);
         }
 

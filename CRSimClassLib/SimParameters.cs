@@ -20,13 +20,15 @@ namespace CRSimClassLib
 
         public const int SensingPeriod = 10;    //milisec
 
+        public const int WhisperPeriod = 20;
+
+        public const int DecisionPeriod = 20;
+
         public const int ReportingPeriod = 10;    //milisec
 
         public const int TransmissionPeriod = 980;    //milisec
 
-        public const int TransmissionPeriodWithDecision = TransmissionPeriod - DecisionPeriod; //milisec
-
-        public const int DecisionPeriod = 20;
+        public const int TransmissionPeriodWithDecision = TransmissionPeriod - DecisionPeriod - WhisperPeriod; //milisec
 
         public const int BSDiscardPreviousReportingDataPeriodLength = 980;
 
@@ -48,7 +50,7 @@ namespace CRSimClassLib
 
         public const bool OperationMode = true;
 
-        public const int NumberOfWayPoints = 40;
+        public static int NumberOfWayPoints = 40;
 
         public const double MaxSpeed = 0.01;  // meter/milisecond = 10 m/s (Husein Bolt)
 
@@ -56,7 +58,6 @@ namespace CRSimClassLib
 
         public const int MaxStationaryTime = 10000; //10 secs
 
-        public const int MinStationaryTime = 1000; //1 secs
-                       
+        public const int MinStationaryTime = 1000; //1 secs                               
     }
 }

@@ -25,6 +25,13 @@ namespace CRSimClassLib.Repositories
         {
             var index = (int)distanceNow / 10;   //ten meters per bucket
 
+            if (double.IsNaN(distanceNow))
+            {
+                Statistics.DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent
+                    [Statistics.DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent.Length - 1] += timeAfter - timeBefore;
+                return;                    
+            }
+
             if (index > Statistics.DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent.Length - 1)
             {
                 index = Statistics.DetectedAndActualDistanceDifferenceBucketInMiliSecondsSpent.Length - 1;

@@ -50,6 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="RandomWaypointMobilityModel\MobilityStateModal.cs" />
+    <Compile Include="Repositories\PowerCalculationRepository.cs" />
+    <Compile Include="Repositories\PrimaryUserRepository.cs" />
     <Compile Include="TerrainModal\BaseStation.cs" />
     <Compile Include="FrameModals\ReportingFrameModal.cs" />
     <Compile Include="Helpers\Singleton.cs" />

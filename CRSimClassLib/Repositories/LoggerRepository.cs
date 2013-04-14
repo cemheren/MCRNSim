@@ -49,6 +49,16 @@ namespace CRSimClassLib.Repositories
             }
         }
 
+        public void AppendLog(string logString)
+        {
+            lock (_file)
+            {
+                var tw = new StreamWriter(_file, true);
+                tw.WriteLine(logString);
+                tw.Close();
+            }
+        }
+
         public void LogAction(LogTypes logType, string action)
         {
             //only log important log types

@@ -52,7 +52,7 @@ namespace CRSimClassLib.TerrainModal
 
         private void CalculatePUposition()
         {
-            if (_MSDataList.Count != 0)
+            if (_MSDataList.Count != 0 && SimParameters.OperationMode == true)
             {
                 if (_MSDataList.Count < 5)
                 {
