@@ -10,38 +10,28 @@ namespace CRSimClassLib.Repositories
     {
         private const double Plo = 38.4;    //dB
         private const double SigmaS = 8;    //dB
-        private const double PathLossExponent = 3.5;
+        private const double PathLossExponent = 1.6;
+
+        private const double meanNoiseFloor = 10;
+        private const double stdDevNoiseFloor = 8;
+
+        private static GaussianRandom _grLogNormal = new GaussianRandom(0, SigmaS);
+        private static GaussianRandom _grNoiseFloor = new GaussianRandom(meanNoiseFloor, stdDevNoiseFloor);
 
         private const double NumberOfMeasurements = SimParameters.NumberOfMeasurementsInMS;
 
-        //public static double LogNormalChannelFading(double TransmitterPowerdB, double distance)
-        //{
-        //    var gr = new GaussianRandom(0, SigmaS);
-
-        //    var si = gr.NextDouble();
-
-        //    var receiverPowerdB = 0.0;
-
-        //    for (int i = 0; i < NumberOfMeasurements; i++)
-        //    {
-        //        receiverPowerdB += TransmitterPowerdB - Plo - PathLossExponent * 10 * Math.Log10(distance) + si;
-        //    }
-
-        //    return receiverPowerdB / NumberOfMeasurements;
-        //}
-
         public static double LogNormalChannelFading(double TransmitterPowerdB, double distance)
-        {
-            // bu gaussian property'si
-            var sigmaCalculatedAccordingToNumberOfMeasurements = SigmaS / Math.Sqrt(NumberOfMeasurements);
-
-            var gr = new GaussianRandom(0, sigmaCalculatedAccordingToNumberOfMeasurements);
-
-            var si = gr.NextDouble();
+        {            
+            var si = _grLogNormal.NextDouble();
 
             var receiverPowerdB = TransmitterPowerdB - Plo - PathLossExponent * 10 * Math.Log10(distance + 0.000000001) + si;
 
             return receiverPowerdB;
+        }
+
+        public static double NoiseFloor()
+        {
+            return _grNoiseFloor.NextDouble();
         }
 
         public static double ToLinearScale(this double powerInDecibels)

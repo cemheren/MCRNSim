@@ -30,7 +30,7 @@ namespace CRSimClassLib.Repositories
             {
                 Directory.CreateDirectory(directory + "\\Logs");
             }
-            _file = directory + "\\Logs\\" + DateTime.Now.ToString().Replace('.', '-').Replace(':', '_').Replace('/', '_') + ".txt";
+            _file = directory + "\\Logs\\" + DateTime.Now.ToString().Replace('.', '-').Replace(':', '_').Replace('/', '_') +"   " + Guid.NewGuid() + ".txt";
         }
 
         public static LoggerRepository Instance

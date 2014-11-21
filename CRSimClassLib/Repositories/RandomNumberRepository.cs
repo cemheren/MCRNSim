@@ -7,13 +7,13 @@ namespace CRSimClassLib.Repositories
 {
     public class RandomNumberRepository
     {   
-        private static Random random;
+        private static Random _random;
 
         private static RandomNumberRepository instance;
 
         private RandomNumberRepository() 
         {
-            random = new Random();
+            _random = new Random();
         }
 
         public static RandomNumberRepository Instance
@@ -32,12 +32,23 @@ namespace CRSimClassLib.Repositories
             }
         }
 
+        public double ExponantialRV(double lambda)
+        {
+            var u = _random.NextDouble();
+
+            if (u == 0)
+            {
+                u = 0.01;
+            }
+
+            return Math.Log(1-u) * lambda * (-1);
+        }
 
         public double NextDouble
         {
             get
             {
-                return random.NextDouble();                
+                return _random.NextDouble();                
             }
         }
 

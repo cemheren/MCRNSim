@@ -15,6 +15,8 @@ namespace CRSimClassLib.TerrainModal
         private BaseStation _baseStation;
         private List<WayPoint> _wayPoints;
 
+        public long _lastTimeAPrimaryUserExisted { get; private set; }
+
         internal TerrainPoint _leftUpCorner { get; private set; }
         internal TerrainPoint _leftDownCorner { get; private set; }
         internal TerrainPoint _rightUpCorner { get; private set; }

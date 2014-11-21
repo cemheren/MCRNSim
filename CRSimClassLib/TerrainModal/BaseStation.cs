@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra.Double;
+using CRSimClassLib.Repositories;
 
 namespace CRSimClassLib.TerrainModal
 {
@@ -27,15 +28,19 @@ namespace CRSimClassLib.TerrainModal
         private int _calculatePUTimeInterval = SimParameters.BSCalculateTimeInterval;
         private int _discardPreviousReportingDataInterval = SimParameters.BSDiscardPreviousReportingDataInterval;
 
+        public bool _lastDetectionDecision { get { return (_MSDataList != null && _MSDataList.Count > 0); } } 
+        
         private TerrainPoint _lastEstimatedLocationOfPU;
         private TerrainPoint _estimatedviamean;
+
+        private static StatisticsRepository _statisticsRepository = Singleton<StatisticsRepository>.Instance;
 
         public BaseStation(double x, double y) : base(x,y)
         {
             _MSDataList = new Dictionary<int, MSData>();
-
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_calculatePUTimeInterval + 300), CalculatePUposition));
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_discardPreviousReportingDataInterval + 200), DiscardPreviousReportingData));            
+            
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_calculatePUTimeInterval + 300), CalculatePUposition));
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_discardPreviousReportingDataInterval + 200), DiscardPreviousReportingData));            
         }
 
         public void ReceiveReporting(ReportingFrameModal reportingFrame)
@@ -56,28 +61,28 @@ namespace CRSimClassLib.TerrainModal
             {
                 if (_MSDataList.Count < 5)
                 {
-                    var allMS = Simulation.GetMobileStations();
+                    var allMS = Simulation.Instance.GetMobileStations();
                     foreach (var ms in allMS)
                     {
-                        Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10), 
+                        Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10), 
                             () => ms.UpdateWhisperRadius(false, SimParameters.WhishperRadiusDropRate)));
                     }
                 }
 
                 if (_MSDataList.Count > 6)
                 {
-                    var allMS = Simulation.GetMobileStations();
+                    var allMS = Simulation.Instance.GetMobileStations();
                     foreach (var ms in allMS)
                     {
                         if (ms._whisperRadius < SimParameters.WhishperRadiusLowerThreshold)
                         {
                             //if whisperradius is too small increase it rapidly
-                            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
+                            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
                                 () => ms.UpdateWhisperRadius(SimParameters.WhishperRadiusLowerThreshold)));
                         }
                         else
                         {
-                            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
+                            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
                             () => ms.UpdateWhisperRadius(true, SimParameters.WhishperRadiusRaiseRate)));
 
                         }    
@@ -87,18 +92,18 @@ namespace CRSimClassLib.TerrainModal
                 {
                     if (_MSDataList.Count > 10)
                     {
-                        var allMS = Simulation.GetMobileStations();
+                        var allMS = Simulation.Instance.GetMobileStations();
                         foreach (var ms in allMS)
                         {
                             if (ms._whisperRadius < SimParameters.WhishperRadiusUpperThreshold)
                             {
                                 //if whisperradius is too small increase it rapidly
-                                Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
+                                Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
                                     () => ms.UpdateWhisperRadius(SimParameters.WhishperRadiusUpperThreshold)));
                             }
                             else
                             {
-                                Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
+                                Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(10),
                                 () => ms.UpdateWhisperRadius(true, SimParameters.WhishperRadiusRaiseRate)));
                         
                             }
@@ -123,7 +128,9 @@ namespace CRSimClassLib.TerrainModal
                 _estimatedviamean = null;
             }
 
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_calculatePUTimeInterval), CalculatePUposition));                
+            _statisticsRepository.UpdateProtocolIndependentPdPmPf(Simulation.Instance.GetTerrain(), _MSDataList.Count > 0);
+
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_calculatePUTimeInterval), CalculatePUposition));                
         }
 
         private void DiscardPreviousReportingData()
@@ -141,7 +148,7 @@ namespace CRSimClassLib.TerrainModal
 
             _MSDataList = tempList;
 
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_discardPreviousReportingDataInterval), DiscardPreviousReportingData));                
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(_discardPreviousReportingDataInterval), DiscardPreviousReportingData));                
         }
 
         /// <summary>

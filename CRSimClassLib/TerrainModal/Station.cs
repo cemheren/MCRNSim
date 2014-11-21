@@ -16,7 +16,7 @@ namespace CRSimClassLib.TerrainModal
 
         public double DistanceTo(Station station)
         {
-            return this._location.DistanceTo(station._location);
+            return this.GetLocation().DistanceTo(station.GetLocation());
         }
 
         public virtual TerrainPoint GetLocation()

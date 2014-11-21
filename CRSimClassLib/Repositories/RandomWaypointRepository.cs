@@ -17,7 +17,7 @@ namespace CRSimClassLib.Repositories
 
         public WayPoint SelectRandomWayPoint()
         {
-            var wps = Simulation.GetWayPoints();
+            var wps = Simulation.Instance.GetWayPoints();
 
             return wps[RandomNumberRepository.Instance.NextInt(0,wps.Count)];
         }
@@ -27,6 +27,14 @@ namespace CRSimClassLib.Repositories
             var speed = RandomNumberRepository.Instance.GetNextDouble(SimParameters.MinSpeed, SimParameters.MaxSpeed);
 
             var mobilityState = new MobilityStateModal(station.GetLocation(), nextWaypoint.GetLocation(), speed);
+
+            return mobilityState;
+        }
+
+        public MobilityStateModal GetInitialStationaryState(Station station)
+        {
+            var mobilityState = new MobilityStateModal(Time.Instance.Now + 1000,
+                station.GetLocation());
 
             return mobilityState;
         }

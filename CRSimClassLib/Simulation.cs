@@ -10,21 +10,43 @@ using Wintellect.PowerCollections;
 
 namespace CRSimClassLib
 {
-    public static class Simulation
+    public class Simulation
     {
-        public static bool EndCondition = false;    //check this condition in the main loop
-        private static OrderedSet<Event> EventQueue;
-        private static int _simulationStopTime;
-        private static double _mobileStationWhisperRadius;
-        private static Terrain _terrain;
+        private static Simulation _instance;
+        public static Simulation Instance
+        { 
+            get 
+            {
+                if (_instance == null)
+                {
+                    _instance = new Simulation();
+                }
+                return _instance;
+            } 
+        }
+        private Simulation() { }
 
-        public static Action DoOnTimeTick = null;
-
-        private static StatisticsRepository _statisticsRepository = Singleton<StatisticsRepository>.Instance;
-        private static PrimaryUserRepository _primaryUserRepository = Singleton<PrimaryUserRepository>.Instance;
-
-        public static void InitializeSimulation(int SimulationStopTime, int numberOfMobileStations, int? numberOfWayPoints, double terrainWidth, double terrainHeigth)
+        public void NewSimulationInstance()
         {
+            _instance = new Simulation();
+        }
+
+        public bool EndCondition = false;    //check this condition in the main loop
+        private OrderedSet<Event> EventQueue;
+        private int _simulationStopTime;
+        private double _mobileStationWhisperRadius = SimParameters.WhishperRadiusLowerThreshold;
+        private Terrain _terrain;
+
+        public Action DoOnTimeTick = null;
+
+        private StatisticsRepository _statisticsRepository = Singleton<StatisticsRepository>.Instance;
+        private PrimaryUserRepository _primaryUserRepository = Singleton<PrimaryUserRepository>.Instance;
+
+        public void InitializeSimulation(int SimulationStopTime, int numberOfMobileStations, int? numberOfWayPoints, double terrainWidth, double terrainHeigth)
+        {
+            Time.Instance.SetTimeToZero();
+            EndCondition = false;
+                        
             EventQueue = new OrderedSet<Event>();
             _simulationStopTime = SimulationStopTime;
             if (numberOfWayPoints != null)
@@ -40,8 +62,6 @@ namespace CRSimClassLib
             _terrain.CreateBaseStation();
             _primaryUserRepository.CreateAndAddPrimaryUser();
             
-            Time.Instance.SetTimeToZero();
-            EndCondition = false;
 
             EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(501), TimeTick));
 
@@ -49,7 +69,7 @@ namespace CRSimClassLib
             EnqueueEvent(simEndEvent);
         }
 
-        private static void TimeTick()
+        private void TimeTick()
         {
             if (DoOnTimeTick != null)
             {
@@ -58,12 +78,12 @@ namespace CRSimClassLib
             EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(500), TimeTick));
         }
 
-        public static void EnqueueEvent(Event ev)
+        public void EnqueueEvent(Event ev)
         {
             EventQueue.Add(ev);
         }
 
-        public static void DequeueEvent()
+        public void DequeueEvent()
         {
             if (EventQueue.Count > 0)
 	        {
@@ -77,38 +97,46 @@ namespace CRSimClassLib
             }
         }
 
-        public static Terrain GetTerrain()
+        public Terrain GetTerrain()
         {
             return _terrain;
         }
         
-        public static List<MobileStation> GetMobileStations()
+        public List<MobileStation> GetMobileStations()
         {
             return _terrain.GetMobileStations();
         }
 
-        public static List<PrimaryUser> GetPrimaryUsers()
+        public List<PrimaryUser> GetPrimaryUsers()
         {
             return _terrain.GetAllPrimaryUsers();
         }
 
-        public static BaseStation GetBaseStation()
+        public BaseStation GetBaseStation()
         {
             return _terrain.GetBaseStation();
         }
 
-        public static List<WayPoint> GetWayPoints()
+        public List<WayPoint> GetWayPoints()
         {
             return _terrain.GetWayPoints();
         }
 
-        public static void UpdateStatistics(int timeBefore, int timeAfter)
+        public void UpdateStatistics(int timeBefore, int timeAfter)
         {
             _statisticsRepository.UpdateAverageDistance(_terrain, timeBefore, timeAfter);
 
             _statisticsRepository.UpdateMobileStationDetectionStats(_terrain, timeBefore, timeAfter);
 
             _statisticsRepository.UpdateAverageWhisperRadius(_terrain, timeBefore, timeAfter);
+
+            _statisticsRepository.UpdateAverageNumberOfWhisperingAttemptsFailed(_terrain, timeBefore, timeAfter);
+
+            _statisticsRepository.UpdateTotalPowerForReporting(_terrain); //TODO: fix here, you know what is it - NO
+
+            _statisticsRepository.UpdateTotalPowerForWhispering(_terrain);
+
+            _statisticsRepository.UpdateProtocolDependentPdPmPf(_terrain, timeBefore, timeAfter);
         }
     }
 }

@@ -13,16 +13,21 @@ namespace CRSimClassLib.TerrainModal
         private static int numberOfMS = 0;
 
         public double _whisperRadius { get; private set; }
+        public double _totalPowerWhispering { get; private set; }
+        public double _totalPowerReporting { get; private set; }
+        public int MS_ID {get; private set; }
+        public int _whisperSlotNumber { get; private set; }
+        public bool? _whisperingFailed { get; private set; }
+
         private double _detectionThreshold = SimParameters.MSDetectionThreshold;
         private bool _previousDetectionDecision;
         public double _lastDetectedPower { get; private set; }
         private bool _operationMode; //true => new algorithm, false => traditional algorithm
-        private int MS_ID;
         private MobilityStateModal _mobilityStateModal;
 
         private MobileStationRepository _mobileStationRepository =  Singleton<MobileStationRepository>.Instance;
         private RandomWaypointRepository _randomWaypointRepository = Singleton<RandomWaypointRepository>.Instance;
-        private PowerCalculationRepository _powerRepository = Singleton<PowerCalculationRepository>.Instance;
+        private PowerCalculationRepository _powerConsumptionRepository = Singleton<PowerCalculationRepository>.Instance;
 
         public MobileStation(double x, double y, double whisperRadius) : base(x, y)
         {
@@ -31,9 +36,10 @@ namespace CRSimClassLib.TerrainModal
             _lastDetectedPower = -100000;
             MS_ID = numberOfMS; //give everyone an Id
             numberOfMS++;
+            _whisperingFailed = null;
 
-            _mobilityStateModal = _randomWaypointRepository.GetRandomStationaryState(this);
-            Simulation.EnqueueEvent(new Event(_mobilityStateModal.TimeEnded,
+            _mobilityStateModal = _randomWaypointRepository.GetInitialStationaryState(this);
+            Simulation.Instance.EnqueueEvent(new Event(_mobilityStateModal.TimeEnded,
                 HandleMovement));
         }
 
@@ -55,7 +61,7 @@ namespace CRSimClassLib.TerrainModal
                 _mobilityStateModal = _randomWaypointRepository.GetRandomStationaryState(this);
             }
 
-            Simulation.EnqueueEvent(new Event(_mobilityStateModal.TimeEnded, HandleMovement));            
+            Simulation.Instance.EnqueueEvent(new Event(_mobilityStateModal.TimeEnded, HandleMovement));            
         }
 
         public override TerrainPoint GetLocation()
@@ -103,7 +109,7 @@ namespace CRSimClassLib.TerrainModal
             double lastDetectedPower;
             _previousDetectionDecision = _mobileStationRepository.SenseForPUPresence(this, _detectionThreshold, out lastDetectedPower);
             _lastDetectedPower = lastDetectedPower;
-                        
+                                    
             if (_previousDetectionDecision)
             {
                 if (this._operationMode == false)
@@ -123,45 +129,81 @@ namespace CRSimClassLib.TerrainModal
 
         public void StartWhisperPeriod()
         {
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.WhisperPeriod), () => EndWhisperPeriod()));            
+            _whisperSlotNumber = RandomNumberRepository.Instance.NextInt(0, SimParameters.NumberOfSlotsInWhispering);
+            _whisperingFailed = false;
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.WhisperPeriod), () => EndWhisperPeriod()));            
         }
 
         public void EndWhisperPeriod()
         {
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(0), () => StartDecisionPeriod()));                        
+            if (SimParameters.ForceMinimumEnergExpenditure == false)
+            {
+                _totalPowerWhispering += _powerConsumptionRepository.TransmissionPower(_whisperRadius, SimParameters.NumberOfWhisperBits);                
+            }
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(0), () => StartDecisionPeriod()));                        
         }
 
         public void StartDecisionPeriod()
         {
             // do this in order to wait for every node to finish their sensing first.
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.DecisionPeriod), () => EndDecisionPeriod()));
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.DecisionPeriod), () => EndDecisionPeriod()));
         }
 
         public void EndDecisionPeriod()
         {
-            var myDecisionToReport = _mobileStationRepository.MakeReportingDecision(this);
-            
-            if (myDecisionToReport)
+            if (SimParameters.ForceMinimumEnergExpenditure) 
             {
-                _mobileStationRepository.CreateStartReportingPeriodEvent(this);
+                var myDecisionForMinimumEnergy = _mobileStationRepository.MakeReportingDecisionForMinimumEnergy(this);
+
+                if (myDecisionForMinimumEnergy)
+                {
+                    _mobileStationRepository.CreateStartReportingPeriodEvent(this);
+                }
+                else
+                {
+                    _mobileStationRepository.CreateStartSensingPeriodWhenDecidedNotToReport(this);
+                }
             }
             else
             {
-                _mobileStationRepository.CreateStartSensingPeriodWhenDecidedNotToReport(this);
+                bool? whisperingFailed;
+
+                var myDecisionToReport = _mobileStationRepository.MakeReportingDecision(this, out whisperingFailed);
+
+                _whisperingFailed = whisperingFailed;
+
+                if (_whisperingFailed.HasValue && _whisperingFailed.Value == true) // collision in this case
+                {
+                    _mobileStationRepository.CreateStartReportingPeriodEvent(this);
+                    return;
+                }
+
+                if (myDecisionToReport)
+                {
+                    _mobileStationRepository.CreateStartReportingPeriodEvent(this);
+                }
+                else
+                {
+                    _mobileStationRepository.CreateStartSensingPeriodWhenDecidedNotToReport(this);
+                }
             }
         }
 
         public void StartReportingPeriod()
         {
-            var bs = Simulation.GetBaseStation();
+            var bs = Simulation.Instance.GetBaseStation();
             var reportingFrame = new ReportingFrameModal { MS_ID = this.MS_ID, Location = GetLocation(), DetectedPower = _lastDetectedPower };
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.ReportingPeriod), () => bs.ReceiveReporting(reportingFrame)));
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(SimParameters.ReportingPeriod), () => bs.ReceiveReporting(reportingFrame)));
 
             _mobileStationRepository.CreateEndReportingPeriodEvent(this);
         }
 
         public void EndReportingPeriod()
         {
+            var distanceToBaseStation = Simulation.Instance.GetTerrain().GetBaseStation().DistanceTo(this);
+            
+            _totalPowerReporting += _powerConsumptionRepository.TransmissionPower(distanceToBaseStation, SimParameters.NumberOfReportingBits);
+
             if (this._operationMode == false)
             {
                 _mobileStationRepository.CreateStartSensingPeriodEvent(this);
@@ -177,6 +219,10 @@ namespace CRSimClassLib.TerrainModal
             if (up)
 	        {
                 _whisperRadius = _whisperRadius * factor;
+                if (_whisperRadius > SimParameters.MaxPossibleWhisperRadius)
+                {
+                    _whisperRadius = SimParameters.MaxPossibleWhisperRadius;
+                }
             }
             else
             {
@@ -192,5 +238,6 @@ namespace CRSimClassLib.TerrainModal
         {
             _whisperRadius = newValue;
         }
+        
     }
 }

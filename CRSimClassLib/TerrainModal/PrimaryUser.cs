@@ -5,11 +5,11 @@ using System.Text;
 
 namespace CRSimClassLib.TerrainModal
 {
-    public class PrimaryUser : Station
+    public class PrimaryUser : MobileStation
     {
         private double _transmittingPower;
 
-        protected PrimaryUser(double x, double y, double TransmittingPower) : base(x,y)
+        protected PrimaryUser(double x, double y, double TransmittingPower) : base(x,y,0)
         {
             _transmittingPower = TransmittingPower;
         }

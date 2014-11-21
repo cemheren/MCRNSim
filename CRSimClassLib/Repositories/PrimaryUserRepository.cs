@@ -11,7 +11,7 @@ namespace CRSimClassLib.Repositories
     {
         public void CreateAndAddPrimaryUser()
         {
-            var mobileUsers = Simulation.GetMobileStations();
+            var mobileUsers = Simulation.Instance.GetMobileStations();
             var randomLocation = mobileUsers[RandomNumberRepository.Instance.NextInt(0, mobileUsers.Count)].GetLocation();
             var randomPoint = new TerrainPoint(RandomNumberRepository.Instance.GetNextDouble(-20, 20),
                 RandomNumberRepository.Instance.GetNextDouble(-20, 20));
@@ -19,21 +19,25 @@ namespace CRSimClassLib.Repositories
 
             var pu = PrimaryUser.CreatePrimaryUser(randomLocation, SimParameters.PUTransmissionPower);
 
-            var nextEventTime = RandomNumberRepository.Instance.NextInt(0, SimParameters.MaximalRemovePUAfter);
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => RemovePrimaryUser(pu)));
+            var nextEventTime = (int)RandomNumberRepository.Instance.ExponantialRV(SimParameters.PUTalkDuration);
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => RemovePrimaryUser(pu)));
 
-            Simulation.GetTerrain().PrimaryUsers.Add(pu);
+            Simulation.Instance.GetTerrain().PrimaryUsers.Add(pu);
+
+            Statistics.LastTimeAPUCreated = Time.Instance.Now;
         }
 
         public void RemovePrimaryUser(PrimaryUser primaryUser)
         {
-            var terrain = Simulation.GetTerrain();
+            var terrain = Simulation.Instance.GetTerrain();
 
             terrain.PrimaryUsers.Remove(primaryUser);
 
-            var nextEventTime = RandomNumberRepository.Instance.NextInt(0, SimParameters.MaximalCreatePUAfter);
+            var nextEventTime = (int)RandomNumberRepository.Instance.ExponantialRV(SimParameters.PUInterArrival);
 
-            Simulation.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => CreateAndAddPrimaryUser()));
+            Simulation.Instance.EnqueueEvent(new Event(Time.Instance.GetTimeAfterMiliSeconds(nextEventTime), () => CreateAndAddPrimaryUser()));
+
+            Statistics.LastTimeAPURemoved = Time.Instance.Now;
         }
     }
 }

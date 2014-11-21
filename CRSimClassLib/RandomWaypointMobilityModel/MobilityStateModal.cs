@@ -24,7 +24,7 @@ namespace CRSimClassLib.RandomWaypointMobilityModel
         public int TimeEnded { get; private set; }
         
         /// <summary>
-        /// Considered Not Moving
+        /// Always Considered Not Moving
         /// </summary>
         public MobilityStateModal(int timeEnded, TerrainPoint point)
         {
@@ -40,7 +40,9 @@ namespace CRSimClassLib.RandomWaypointMobilityModel
                 + " This could have been left out for user to decide, but it did not.");
             }
         }
-
+        /// <summary>
+        /// Always Considered moving
+        /// </summary>
         public MobilityStateModal(WayPoint startingPoint, WayPoint endingPoint, double speed)
         {
             IsMoving = true;
